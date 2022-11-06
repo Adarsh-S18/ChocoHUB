@@ -449,7 +449,6 @@ router.get('/add-temp-address', (req, res) => {
 
 
 router.get('/user-logout', (req, res) => {
-  req.session.user = null
   req.session.destroy()
   res.redirect('/user-login')
 })

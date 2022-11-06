@@ -1,51 +1,72 @@
+require('dotenv').config()
 var express = require('express');
 const { helpers } = require('handlebars');
 const { ObjectId } = require('mongodb');
 var productHelpers = require('../helpers/product-helpers');
 const { getchartData } = require('../helpers/user-helpers');
 const userHelpers = require('../helpers/user-helpers');
+const admin_name = process.env.ADMIN
+const admin_password = process.env.ADMIN_PASSWORD
 
 var router = express.Router();
+
+
+
 /* GET users listing. */
-
-const credential = {
-  email: "adarshspillai@gmail.com",
-  password: "adarsh"
-
-}
 
 //     L O G I N   // 
 
 
 
+const adminverify = (req,res,next)=>
+{
+
+  // console.log(req.session.admin.loggedIn,"wwwww");
+  if(req.session.adminloggedIn)
+  {
+    next()
+  
+  }
+  else
+  {
+  
+    res.redirect('/admin/admin-login')
+  }
+}
+
 router.get('/admin-login', function (req, res) 
 {
   if (req.session.admin)
    {
+
     res.redirect('/admin/')
   }
   else {
     res.render('admin/admin-login')
   }
 })
+
 router.post('/admin-login', (req, res) => {
-  if (req.body.email == credential.email && req.body.password == credential.password) {
+  if (req.body.email == admin_name && req.body.password == admin_password)
+  {
+    req.session.admin=req.body.email  // creating a session 
+    req.session.adminloggedIn=true
     res.redirect('/admin/')
   }
-  else {
+  else 
+  {
     res.redirect('/admin/admin-login')
   }
 })
 
 
 
-router.get('/', async(req, res)=>
+router.get('/',adminverify,async(req, res)=>
 {
   let count=await productHelpers.getUserCount()
   let product=await productHelpers.getProductCount()
   let order=await productHelpers.getOrderCount()
   res.render('admin/sidebar-dashboard', { admin: true ,count , product , order})
-
 } );
 
 
@@ -57,7 +78,7 @@ router.get('/', async(req, res)=>
 //         D A S H B O A R D               //
 /////////////////////////////////////////////
 
-router.get('/sidebar-dashboard',async(req,res)=>
+router.get('/sidebar-dashboard',adminverify,async(req,res)=>
 {
   let count=await productHelpers.getUserCount()
   let product=await productHelpers.getProductCount()
@@ -72,7 +93,7 @@ router.get('/sidebar-dashboard',async(req,res)=>
 //////////////////////////////////////////////
 
 
-router.get('/sidebar-products', function (req, res, next) {
+router.get('/sidebar-products',adminverify, function (req, res, next) {
   productHelpers.getAllProducts().then((products) => {
     res.render('admin/sidebar-products', {products, admin: true })
   })
@@ -80,16 +101,7 @@ router.get('/sidebar-products', function (req, res, next) {
 
 
 
-// router.get('/user-login', function (req, res) {
-//   if (req.session.user) 
-//   {
-//     res.redirect('/')
-//   }
-//   else {
-//     res.render('user/user-login', { "loginErr": req.session.userloginErr });
-//     req.session.userloginErr = false;
-//   }
-// });
+
 
 
 
@@ -100,7 +112,7 @@ router.get('/sidebar-products', function (req, res, next) {
 
 
 
-router.get('/add-products', async(req, res) =>{
+router.get('/add-products',adminverify, async(req, res) =>{
   let category=await productHelpers.getAllCategory()
   res.render('admin/add-products',{admin:true,category})
 })
@@ -154,7 +166,7 @@ router.get('/block-user/:id/:blockStatus', (req, res) => {
 
 
 
-router.get('/sidebar-category', (req, res) => {
+router.get('/sidebar-category',adminverify, (req, res) => {
   productHelpers.getAllCategory().then((category) => {
     res.render('admin/sidebar-category', { category, admin: true })
   })
@@ -163,7 +175,7 @@ router.get('/sidebar-category', (req, res) => {
 
 
 
-router.get('/sidebar-users', (req, res) => {
+router.get('/sidebar-users',adminverify, (req, res) => {
   userHelpers.getAllUser().then((users) => {
     res.render('admin/sidebar-users', { users, admin: true })
   })
@@ -171,7 +183,7 @@ router.get('/sidebar-users', (req, res) => {
 
 
 
-router.get('/add-category', (req, res) => {
+router.get('/add-category',adminverify, (req, res) => {
   res.render('admin/add-category', { admin: true })
 })
 
@@ -267,7 +279,7 @@ router.post('/edit-products/:id', (req, res) => {
 /////////////////////////////////////////
 
 
-router.get('/sidebar-orders',function(req,res,next)
+router.get('/sidebar-orders',adminverify,function(req,res,next)
 {
   userHelpers.getAllOrders().then((orders)=>
   {
@@ -329,7 +341,7 @@ router.get('/order-products/:id',async(req,res)=>
 //       S I D E B A R   C  O U P O N S     //
 //////////////////////////////////////////////
 
-router.get('/sidebar-coupons',(req,res)=>
+router.get('/sidebar-coupons',adminverify,(req,res)=>
 {
   productHelpers.getAllCoupons().then((coupons)=>
   {
@@ -339,7 +351,7 @@ router.get('/sidebar-coupons',(req,res)=>
 })
 
 
-router.get('/add-coupons',(req,res)=>
+router.get('/add-coupons',adminverify,(req,res)=>
 {  
   res.render('admin/add-coupons',{admin:true})
 })
@@ -388,7 +400,6 @@ router.get('/getChartData',getchartData)
 
 router.get('/admin-logout', (req, res) => 
 {
-  // req.session.user = null
   req.session.destroy()
   res.redirect('/admin/admin-login')
 })
